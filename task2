@@ -1,0 +1,37 @@
+from flask import Flask, request, jsonify
+import requests
+
+app = Flask(__name__)
+
+ETHERSCAN_URL = "https://api.etherscan.io/api"
+
+@app.route('/task2', methods=['GET'])
+def get_eth_balance():
+    address = request.args.get('address')
+    api_key = request.args.get('apikey')
+    
+    if not address or not api_key:
+        return jsonify({"error": "Missing address or apikey parameter"}), 400
+
+    params = {
+        "module": "account",
+        "action": "balance",
+        "address": address,
+        "tag": "latest",
+        "apikey": api_key
+    }
+
+    response = requests.get(ETHERSCAN_URL, params=params)
+    data = response.json()
+    
+    if "result" not in data:
+        return jsonify({"error": "Invalid response from Etherscan"}), 500
+
+    balance_wei = int(data["result"])  # Баланс в WEI
+    balance_eth = balance_wei / 10**18  # Конвертация в ETH
+
+    return jsonify({"address": address, "balance": balance_eth})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
+
